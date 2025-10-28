@@ -35,10 +35,8 @@ jobs:
         cd infra
         terraform init
         terraform apply -auto-approve
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: eu-west-1
+      # No se necesitan variables de entorno de AWS,
+      # Terraform detecta automáticamente las credenciales desde ~/.aws
 
     - name: Set S3_BUCKET_NAME env var
       run: |
@@ -49,8 +47,6 @@ jobs:
     - name: Run Infrastructure Tests (S3)
       run: |
         pytest app/tests
+      # boto3 también detecta automáticamente las credenciales desde ~/.aws
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: eu-west-1
         S3_BUCKET_NAME: ${{ env.S3_BUCKET_NAME }}
