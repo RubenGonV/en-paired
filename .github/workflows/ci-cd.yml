@@ -1,4 +1,4 @@
-name: CI/CD FastAPI + Terraform Fase 1
+name: CI/CD FastAPI + Terraform (Fase 1)
 
 on:
   push:
@@ -8,50 +8,60 @@ jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
+    # Credenciales seguras para Terraform y boto3
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+    # 1️⃣ Checkout del repositorio
+    - name: Checkout code
+      uses: actions/checkout@v4
 
+    # 2️⃣ Configurar Python
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.11
+        python-version: '3.11'
 
+    # 3️⃣ Instalar dependencias de FastAPI
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r app/requirements.txt
 
+    # 4️⃣ Ejecutar tests básicos de FastAPI
     - name: Run FastAPI tests
-      run: |
-        pytest app/tests
+      run: pytest app/tests
 
+    # 5️⃣ Build del contenedor Docker
     - name: Build Docker image
       run: |
         docker build -t fastapi-app:latest app
 
+    # 6️⃣ Instalar Terraform en el runner
     - name: Install Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.8.5  # o la versión que prefieras
+        terraform_version: 1.8.5
 
+    # 7️⃣ Ejecutar Terraform (init + apply)
     - name: Terraform Init & Apply
       run: |
         cd infra
         terraform init
         terraform apply -auto-approve
-      # No se necesitan variables de entorno de AWS,
-      # Terraform detecta automáticamente las credenciales desde ~/.aws
 
-    - name: Set S3_BUCKET_NAME env var
+    # 8️⃣ Guardar el nombre del bucket como variable de entorno
+    - name: Capture S3 bucket name
       run: |
         cd infra
         BUCKET_NAME=$(terraform output -raw bucket_name)
         echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
+    # 9️⃣ Ejecutar tests de infraestructura (boto3)
     - name: Run Infrastructure Tests (S3)
-      run: |
-        pytest app/tests
-      # boto3 también detecta automáticamente las credenciales desde ~/.aws
+      run: pytest app/tests
       env:
         S3_BUCKET_NAME: ${{ env.S3_BUCKET_NAME }}
