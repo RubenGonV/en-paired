@@ -30,6 +30,11 @@ jobs:
       run: |
         docker build -t fastapi-app:latest app
 
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.8.5  # o la versión que prefieras
+
     - name: Terraform Init & Apply
       run: |
         cd infra
