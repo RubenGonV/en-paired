@@ -1,0 +1,13 @@
+# Node
+node_modules/
+npm-debug.log*
+.env
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Sistema
+.DS_Store
+*.log

@@ -1,0 +1,56 @@
+name: CI/CD FastAPI + Terraform Fase 1
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r app/requirements.txt
+
+    - name: Run FastAPI tests
+      run: |
+        pytest app/tests
+
+    - name: Build Docker image
+      run: |
+        docker build -t fastapi-app:latest app
+
+    - name: Terraform Init & Apply
+      run: |
+        cd infra
+        terraform init
+        terraform apply -auto-approve
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: eu-west-1
+
+    - name: Set S3_BUCKET_NAME env var
+      run: |
+        cd infra
+        BUCKET_NAME=$(terraform output -raw bucket_name)
+        echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+    - name: Run Infrastructure Tests (S3)
+      run: |
+        pytest app/tests
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: eu-west-1
+        S3_BUCKET_NAME: ${{ env.S3_BUCKET_NAME }}
