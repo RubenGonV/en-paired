@@ -4,20 +4,31 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
-
-  required_version = ">= 1.0.0"
 }
 
 provider "aws" {
-  region = "eu-west-1"
+  region = var.aws_region
 }
 
-resource "aws_s3_bucket" "example" {
-  bucket = "en-paired-demo-${random_id.suffix.hex}"
-  force_destroy = true
+variable "aws_region" {
+  type    = string
+  default = "eu-west-1"
 }
 
 resource "random_id" "suffix" {
   byte_length = 4
+}
+
+resource "aws_s3_bucket" "fastapi_bucket" {
+  bucket = "fastapi-app-${random_id.suffix.hex}"
+}
+
+output "bucket_name" {
+  value       = aws_s3_bucket.fastapi_bucket.bucket
+  description = "Nombre del bucket S3 creado para la app FastAPI"
 }
